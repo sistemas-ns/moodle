@@ -48,8 +48,11 @@ function xsendfile($filepath) {
 
     $filepath = realpath($filepath);
 
+    // Note: realpath() returns false if the local request directory has not
+    // been created yet; no file can be inside it in that case. Passing false
+    // to str_contains() would match every path and disable xsendfile entirely.
     $localrequestdir = realpath($CFG->localrequestdir);
-    if (str_contains($filepath, $localrequestdir)) {
+    if ($localrequestdir !== false && str_contains($filepath, $localrequestdir)) {
         // Do not serve files from local request directory using xsendfile.
         // They are likely to be removed before xsendfile can serve them.
         return false;
