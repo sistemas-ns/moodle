@@ -48,10 +48,13 @@ function xsendfile($filepath) {
 
     $filepath = realpath($filepath);
 
+    // Do not serve files from the local request directory using X-Sendfile as
+    // they are likely to be removed before the server can serve them.
+    // realpath() is false until the directory is created lazily; a false value
+    // must not reach str_contains(), which coerces it to '' and matches every
+    // path, disabling xsendfile for all files.
     $localrequestdir = realpath($CFG->localrequestdir);
-    if (str_contains($filepath, $localrequestdir)) {
-        // Do not serve files from local request directory using xsendfile.
-        // They are likely to be removed before xsendfile can serve them.
+    if ($localrequestdir && str_contains($filepath, $localrequestdir)) {
         return false;
     }
 
