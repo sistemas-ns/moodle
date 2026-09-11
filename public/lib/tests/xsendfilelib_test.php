@@ -169,4 +169,34 @@ final class xsendfilelib_test extends \advanced_testcase {
 
         $this->assertFalse(xsendfile($file));
     }
+
+    /**
+     * Test that xsendfile still works when the local request directory does
+     * not exist: realpath() returns false in that case and nothing can be
+     * inside the directory, so it must not disable xsendfile.
+     *
+     * @runInSeparateProcess
+     */
+    public function test_nginx_accelerated_missing_localrequestdir(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+
+        // Ensure it is enabled.
+        $CFG->xsendfile = 'X-Accel-Redirect';
+        $CFG->xsendfilealiases = [
+            '/my/moodle/alias/moodledata/' => $CFG->dataroot,
+        ];
+
+        // Point the local request directory at a path which does not exist
+        // yet: it is created lazily, so this is the state of a fresh
+        // install or container until make_request_directory() first runs.
+        $CFG->localrequestdir = "{$CFG->dataroot}/non/existent/requestdir";
+        $this->assertDirectoryDoesNotExist($CFG->localrequestdir);
+
+        $file = $CFG->dataroot . '/testfile.txt';
+        file_put_contents($file, 'Hello, world!');
+
+        $this->assertTrue(xsendfile($file));
+    }
 }
